@@ -1,3 +1,5 @@
 generated
 references
 results
+__pycache__
+*.ipynb

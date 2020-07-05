@@ -3,22 +3,65 @@ import torchvision.models as models
 from tqdm import tqdm
 import torch.nn.functional as F
 import utils
+import argparse
+import os
 
+parser = argparse.ArgumentParser(prog="Neural Style Transfer")
+parser.add_argument("content", help="Path to the content reference image")
+parser.add_argument("style", help="Path to the style reference image")
+parser.add_argument(
+    "--output_folder",
+    help="Folder to save generated images",
+    default=os.path.join(os.getcwd(), "generated"),
+)
+parser.add_argument(
+    "--gif",
+    help="If argument specified, additionally create gif from generated images",
+    action="store_true",
+)
+parser.add_argument(
+    "--alpha",
+    help="Ratio of style to content when computing loss. Use larger value to capture more style. Typical value: between 100 and 100000",
+    default=1000,
+    type=int,
+)
+parser.add_argument("--epochs", help="Number of iterations", type=int, default=300)
+parser.add_argument(
+    "--img_size",
+    help="Width of output image. Aspect ratio is set to 4:3.",
+    type=int,
+    default=640,
+)
+parser.add_argument(
+    "--device",
+    help="'cuda' for GPU, 'cpu' for CPU. By default, selects GPU if available",
+)
+parser.add_argument(
+    "--log_interval",
+    help="Number of iterations after which to save image",
+    type=int,
+    default=50,
+)
+args = parser.parse_args()
 
-EPOCHS = 500
-log_interval = 20
-alpha = 1000  # set between 1000 and 100000
-img_x = 768
+img_x = args.img_size
 img_y = int(3 * img_x / 4)
-device = "cuda" if torch.cuda.is_available() else "cpu"
-content_reference = "heidelberg.jpg"
-style_reference = "composition7.jpg"
+if args.device is None:
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+else:
+    device = args.device
+
+print(f"\nDevice: {device}")
+print(f"Alpha: {args.alpha}")
+print(f"Output folder: {args.output_folder}")
 
 # C is content image, S is style image
-C, S = utils.load_references(content_reference, style_reference, img_y, img_x)
+print("\nLoading reference images...")
+C, S = utils.load_references(args.content, args.style, img_y, img_x)
 C, S = C.to(device), S.to(device)
 
 # load model and disable gradients for the model
+print("Loading VGG16 model...")
 model = models.vgg16(pretrained=True).to(device)
 for param in model.parameters():
     param.requires_grad = False
@@ -35,9 +78,9 @@ model_layers = [(1, 8), (8, 15), (15, 22), (22, 29)]
 losses = {"content": [], "style": [], "total": []}
 
 # training loop
-pbar = tqdm(total=EPOCHS)
+pbar = tqdm(total=args.epochs + 20, leave=True, desc="Iterating...")
 epoch = 0
-while epoch <= EPOCHS:
+while epoch <= args.epochs:
 
     # function for the optimizer to call
     def engine():
@@ -69,20 +112,17 @@ while epoch <= EPOCHS:
             style_losses
         )  # equal weights for each layer
 
-        loss = loss_content + alpha * loss_style
+        loss = loss_content + args.alpha * loss_style
 
         optimizer.zero_grad()
         loss.backward()
 
         # log metrics
         losses["content"].append(loss_content.item())
-        losses["style"].append(alpha * loss_style.item())
+        losses["style"].append(args.alpha * loss_style.item())
         losses["total"].append(loss.item())
-        if (epoch + 1) % log_interval == 0:
-            tqdm.write(
-                f"Epoch: {epoch}, Content Loss: {loss_content.item()}, Style Loss: {loss_style.item()}, Loss: {loss.item()}\n"
-            )
-            utils.save_image(G.cpu().detach(), epoch)
+        if (epoch + 1) % args.log_interval == 0:
+            utils.save_image(G.cpu().detach(), args.output_folder, epoch)
         pbar.update()
         epoch += 1
 
@@ -91,3 +131,8 @@ while epoch <= EPOCHS:
     optimizer.step(engine)
 
 pbar.close()
+if args.gif:
+    print("Creating GIF in output folder...")
+    utils.save_gif(args.output_folder)
+print("Saving loss log to output folder...")
+utils.plot_logs(losses, args.output_folder)

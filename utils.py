@@ -1,9 +1,12 @@
+import os
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import albumentations
 from albumentations.pytorch.transforms import ToTensor
+import imageio
+import re
 
 try:
     plt.style.use(
@@ -38,24 +41,45 @@ def gram_matrix(filter):
     return gram
 
 
-def save_image(G, epoch):
+def natural_sort(l):
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
+    return sorted(l, key=alphanum_key)
+
+
+def save_image(G, folder, epoch, gif=False):
     unorm = UnNormalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
     image = unorm(G.squeeze())
     image = image.numpy()
     image = np.transpose(image, (1, 2, 0))
     image = np.clip(image, 0, 1)
-    plt.imsave(f"generated/generated_{epoch}.jpg", image)
+    if not os.path.isdir(folder):
+        os.makedirs(folder)
+    plt.imsave(os.path.join(folder, f"generated_{epoch}.jpg"), image)
     pass
 
 
-def plot_logs(losses):
-    fig, ax = plt.figure(figsize=(16, 9))
+def save_gif(folder):
+    images = []
+    for filename in natural_sort(os.listdir(folder)):
+        if filename.endswith(".jpg"):
+            file_path = os.path.join(folder, filename)
+            images.append(imageio.imread(file_path))
+    imageio.mimsave(os.path.join(folder, "animated.gif"), images, fps=5)
+    pass
+
+
+def plot_logs(losses, folder):
+    fig, ax = plt.subplots(figsize=(16, 9))
     sns.lineplot(x=list(range(len(losses["content"]))), y=losses["content"], ax=ax)
     sns.lineplot(x=list(range(len(losses["style"]))), y=losses["style"], ax=ax)
     sns.lineplot(x=list(range(len(losses["total"]))), y=losses["total"], ax=ax)
-    ax.set_legend(["Content", "Style", "Total"])
-    ax.set(xlabel="Epoch", ylabel="Loss", ylim=(0, 1000))
-    fig.show()
+    ax.legend(["Content", "Style", "Total"])
+    ax.set_ylabel("Loss")
+    ax.set_xlabel("Epoch")
+    ax.set_ylim(0, 1000)
+    fig.savefig(os.path.join(folder, "log.png"))
+    pass
 
 
 def load_references(content, style, h, w):
