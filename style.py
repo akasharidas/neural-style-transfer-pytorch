@@ -11,7 +11,7 @@ parser.add_argument("content", help="Path to the content reference image")
 parser.add_argument("style", help="Path to the style reference image")
 parser.add_argument(
     "--output_folder",
-    help="Folder to save generated images",
+    help="Folder to save generated images. Default: Folder named 'generated' in cwd.",
     default=os.path.join(os.getcwd(), "generated"),
 )
 parser.add_argument(
@@ -21,14 +21,16 @@ parser.add_argument(
 )
 parser.add_argument(
     "--alpha",
-    help="Ratio of style to content when computing loss. Use larger value to capture more style. Typical value: between 100 and 100000",
-    default=1000,
+    help="Ratio of style to content when computing loss. Use larger value to capture more style. Default: 10000. Typical value: between 100 and 100000",
+    default=10000,
     type=int,
 )
-parser.add_argument("--epochs", help="Number of iterations", type=int, default=300)
+parser.add_argument(
+    "--epochs", help="Number of iterations. Default: 300", type=int, default=300
+)
 parser.add_argument(
     "--img_size",
-    help="Width of output image. Aspect ratio is set to 4:3.",
+    help="Width of output image. Aspect ratio is set to 4:3. Default: 640",
     type=int,
     default=640,
 )
@@ -38,7 +40,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--log_interval",
-    help="Number of iterations after which to save image",
+    help="Number of iterations after which to save image. Default: 50",
     type=int,
     default=50,
 )
