@@ -8,16 +8,19 @@ Neural style transfer is an optimization technique used to take three images, a 
 
 ## Results
 
-**Style**: Femme nue assise by Pablo Picasso, 1910
+**Style**: Femme nue assise by Pablo Picasso, 1910  
 **Content**: Photo of the Neckarfront, Tuebingen (Germany)
+
 ![picasso result](results/picasso.gif)
 
-**Style**: Composition VII by Wassily Kandinsky, 1913
+**Style**: Composition VII by Wassily Kandinsky, 1913  
 **Content**: Photo of the Neckarfront, Tuebingen (Germany)
+
 ![picasso result](results/comp.gif)
 
-**Style**: [Logo](https://1000logos.net/wp-content/uploads/2016/10/Barcelona-symbol.jpg) of FC Barcelona
+**Style**: [Logo](https://1000logos.net/wp-content/uploads/2016/10/Barcelona-symbol.jpg) of FC Barcelona  
 **Content**: Photo I took at Camp Nou, Barcelona (Spain)
+
 ![picasso result](results/campnou.gif)
 
 ## Usage
